@@ -1,0 +1,17 @@
+Unit]
+Description=prometheus gitlab job exporter
+After=network.target
+
+[Service]
+Type=simple
+User={{ user }}
+Group={{ group }}
+ExecStart={{ venv }}/bin/gitlab_job_exporter --config gitlab_job_exporter.json
+ExecReload=/bin/kill -HUP $MAINPID
+
+SyslogIdentifier=gitlab-job-exporter
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+

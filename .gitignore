@@ -1,0 +1,6 @@
+build/*
+dist/*
+etc/*
+gitlab_job_exporter.egg-info/*
+*.pyc
+
