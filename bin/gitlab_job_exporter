@@ -1,30 +1,10 @@
 #!/usr/bin/env python3
 import json
 import time
-import argparse
 from pathlib import Path
 from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
-from gitlab_job_exporter import GitlabJobCollector 
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description='gitlab job exporter args using config file'
-    )
-
-    parser.add_argument(
-        '-c', '--config',
-        required=True,
-        help='gitlab job exporter config file using json format',
-    )
-
-    return parser.parse_args()
-
-def example_config():
-    json_config={"port":"9118", "interval":"10", "git_url":"https://<gitlab-example-url>/api/v4/projects/", "git_project_id":"1234", "git_token":"XXXXXXXXXXXXXXXXXXXX", "git_branch":"gitlab_example_branch" }
-    print('Example Configuration: ')
-    print(json.dumps(json_config, indent=2)) 
-    print('')
+from gitlab_job_exporter import GitlabJobCollector, throw_exception, parse_args, example_config
 
 def main():
 
@@ -32,39 +12,51 @@ def main():
         args = parse_args()
         configfile = args.config
 
-        # Check if configfile exists
-        configjson = Path(configfile)
+        try:
+            configjson = Path(configfile)
+            with open(configjson, 'r') as inputfile:
+                config = json.load(inputfile)
+        except (FileNotFoundError) as exc:
+            throw_exception(exc, 'ERROR: Check name of configuration file')
+        except (json.JSONDecodeError) as exc:
+            inputfile.close()
+            throw_exception(exc, 'ERROR: Invalid json format of configuration file {0}'.format(example_config()))
+        except (OSError, IOError) as exc:
+            inputfile.close()
+            throw_exception(exc, 'ERROR: OSError / IOError')
 
-        with open(configjson, 'r') as f:
-            config = json.load(f)
-        
-        port            = int(config['port'])
-        interval        = int(config['interval'])
-        git_url         = config['git_url']
-        git_project_id  = config['git_project_id']
-        git_token       = config['git_token']
-        git_branch      = config['git_branch']
+        # Read input data from configuration file
+        port_raw = config.get('port', "9118")
+        try:
+            port = int(port_raw)
+        except ValueError as exc:
+            throw_exception(exc, 'ERROR: Invalid format of port number')
 
-        REGISTRY.register(GitlabJobCollector(git_url,git_project_id,git_token,git_branch))
+
+        interval_raw = config.get('interval', '10')
+
+        try:
+            interval = int(interval_raw)
+        except ValueError as exc:
+            throw_exception(exc, 'ERROR: Invalid format of scraping interval')
+
+        git_url         = config.get('git_url', None)
+        git_project_id  = config.get('git_project_id', -1)
+        git_token       = config.get('git_token', None)
+        git_branch      = config.get('git_branch', 'DefaultBranch')
+
+        REGISTRY.register(GitlabJobCollector(git_url, git_project_id, git_token, git_branch))
 
         start_http_server(port)
-        while True: time.sleep(interval)
-
-    except FileNotFoundError:
-        print('')
-        print('EXCEPTION FileNotFoundError')
-        print('')
-        print('ERROR: JSON config file does not exist...')
-        print('')
-        example_config()
-        exit(0)
+        while True:
+            time.sleep(interval)
 
     except KeyboardInterrupt:
         print('')
         print(" Manually Interrupted")
+        inputfile.close()
         exit(0)
 
 
 if __name__ == "__main__":
     main()
-

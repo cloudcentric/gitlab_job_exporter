@@ -1,4 +1,4 @@
-Unit]
+[Unit]
 Description=prometheus gitlab job exporter
 After=network.target
 
@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User={{ user }}
 Group={{ group }}
-ExecStart={{ venv }}/bin/gitlab_job_exporter --config gitlab_job_exporter.json
+ExecStart={{ venv }}/bin/gitlab_job_exporter --config /etc/prometheus/gitlab_job_exporter.json
 ExecReload=/bin/kill -HUP $MAINPID
 
 SyslogIdentifier=gitlab-job-exporter
