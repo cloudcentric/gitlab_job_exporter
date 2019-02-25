@@ -47,7 +47,10 @@ def _http_get_data(url, token):
     try:
         request = Request(url)
         request.add_header('PRIVATE-TOKEN', token)
-        data = json.load(urlopen(request))
+        data_bin = urlopen(request)
+        data_str = data_bin.read().decode('utf-8')
+        data_json = json.loads(data_str)
+
     except (URLError, HTTPError) as exc:
         throw_exception(exc, 'Log: url={0}'.format(url))
     except TypeError as exc:
@@ -55,7 +58,7 @@ def _http_get_data(url, token):
     except ValueError as exc:
         throw_exception(exc, 'Log: url={0}'.format(url))
 
-    return data
+    return data_json
 
 class GitlabJobCollector():
 

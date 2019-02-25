@@ -14,15 +14,14 @@ def main():
 
         try:
             configjson = Path(configfile)
-            with open(configjson, 'r') as inputfile:
-                config = json.load(inputfile)
+            contents = open(str(configjson), "r").read()
+            config = json.loads(contents)
+
         except (FileNotFoundError) as exc:
             throw_exception(exc, 'ERROR: Check name of configuration file')
         except (json.JSONDecodeError) as exc:
-            inputfile.close()
             throw_exception(exc, 'ERROR: Invalid json format of configuration file {0}'.format(example_config()))
         except (OSError, IOError) as exc:
-            inputfile.close()
             throw_exception(exc, 'ERROR: OSError / IOError')
 
         # Read input data from configuration file
@@ -54,7 +53,6 @@ def main():
     except KeyboardInterrupt:
         print('')
         print(" Manually Interrupted")
-        inputfile.close()
         exit(0)
 
 
