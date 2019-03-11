@@ -14,6 +14,7 @@ COLLECTION_TIME = Summary('gitlab_job_collector_collect_seconds',
 #
 # gitlab_job_last_id{'GitRepo','Branch','Scope'}: number
 # gitlab_job_last_created_timestamp{'GitRepo','Branch','Scope'}: unix timestamp
+# gitlab_job_last_finished_timestamp{'GitRepo','Branch','Scope'}: unix timestamp
 # gitlab_job_last_starting_duration_seconds{'GitRepo','Branch','Scope'}: seconds
 # gitlab_job_last_running_duration_seconds{'GitRepo','Branch','Scope'}: seconds
 # gitlab_job_last_total_duration_seconds{'GitRepo','Branch','Scope'}: seconds
@@ -97,9 +98,8 @@ class GitlabJobCollector():
         for status in self.job_status:
             self._get_all_metrics(status)
 
-        for status in self.job_status:
-            for metric in self._prometheus_metrics.values():
-                yield metric
+        for metric in self._prometheus_metrics.values():
+            yield metric
 
         # Scraping duration
         duration = time.time() - start
@@ -161,6 +161,10 @@ class GitlabJobCollector():
                                                            self._git_branch,
                                                            status],
                                                           created_at.timestamp())
+        self._prometheus_metrics['finished_at'].add_metric([self._git_repo_url,
+                                                            self._git_branch,
+                                                            status],
+                                                           finished_at.timestamp())
         self._prometheus_metrics['duration_starting'].add_metric([self._git_repo_url,
                                                                   self._git_branch,
                                                                   status],
@@ -186,6 +190,10 @@ class GitlabJobCollector():
             'created_at':
                 GaugeMetricFamily('gitlab_job_last_created_timestamp',
                                   'Gitlab job creation timestamp of the last job',
+                                  labels=['GitRepo', 'Branch', 'Scope']),
+            'finished_at':
+                GaugeMetricFamily('gitlab_job_last_finished_timestamp',
+                                  'Gitlab job finished timestamp of the last job',
                                   labels=['GitRepo', 'Branch', 'Scope']),
             'duration_starting':
                 GaugeMetricFamily('gitlab_job_last_starting_duration_seconds',
